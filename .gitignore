@@ -37,3 +37,8 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Own ignores
+
+*.pdf
+statlearn2.Rproj

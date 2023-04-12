@@ -1,9 +1,7 @@
 ---
+subtitle: "TMA4268 Statistical Learning V2023"
 title: "Compulsory Exercise 2: Title (give your project an informative title)"
-author:
-- Full name for group member \#1.
-- Full name for group member \#2.
-- Full name for group member \#3.
+author: "Torbjørn Vatne, Ludvik Braathen and Johan Bjerkem"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: \usepackage{amsmath}
 output:
