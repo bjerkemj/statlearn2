@@ -44,6 +44,7 @@ library(knitr)
 library(kableExtra)
 library(dplyr)
 library(scales)
+require("tree")
 
 require(tidyverse)
 require(rlang)
@@ -52,17 +53,18 @@ require(rlang)
 <!--  Etc (load all packages needed). -->
 
 
-
-
-
-
-
 ## Introduction: Scope and purpose of your project
-```{r, options(width = 50)}
+
+## Descriptive data analysis/statistics
+### Load data
+```{r, echo = TRUE, results='hide'}
 heart <- read.csv("./heart.csv", header = T, stringsAsFactors = T)
+str(heart)
+summary(heart)
+heart$FastingBS <- as.factor(heart$FastingBS)
+heart$HeartDisease <- as.factor(heart$HeartDisease)
 kable(head(heart), format = "markdown", align = "c", row.names = FALSE)
 ```
-
 ```{r, echo=FALSE}
 truncate_colnames <- function(df, max_length = 10) {
   colnames(df) <- sapply(colnames(df), function(x) {
@@ -75,25 +77,20 @@ truncate_colnames <- function(df, max_length = 10) {
   return(df)
 }
 
-data <- heart # Replace this with your data
-first_5_rows <- head(data, 5) # Select the first 5 rows
+data <- heart
+first_5_rows <- head(data, 5)
 
-# Truncate column names to a smaller length
 first_5_rows <- truncate_colnames(first_5_rows, max_length = 7)
 
-# Render the table without row names (row index)
 kable(first_5_rows, format = "markdown", align = "c", row.names = FALSE)
 ```
 
+We import the data set from file and immediately turn all columns with values
+as strings into factors. After this we get a overview of the data 
+using the *str* and *summary* methods. Here we notice that the values 
+**fastingBS** and **heartDisease** need to be turned into factors. Lastly we
+have a look at the head of the data.
 
-```{r summary, echo=FALSE, eval=FALSE}
-summary(heart)
-```
-
-
-
-
-## Descriptive data analysis/statistics
 
 ### Histograms
 
@@ -266,9 +263,55 @@ Calls: <Anonymous> ... withVisible -> eval_with_user_handlers -> eval -> eval
 Execution halted
 
 ## Methods
-```{}
-# Have to split data into training and test sets
+### Logistic Regression
+```{r trainsplit}
+set.seed(1)
+train_perc <- 0.70
+train_index <- sample(1:nrow(heart), nrow(heart)*train_perc)
+test_index <- (-train_index)
+train <- heart[train_index, ]
+test <- heart[test_index, ]
 ```
+
+```{r glm}
+glm.fit <- glm(HeartDisease ~ ., data = train, family = binomial)
+summary(glm.fit)
+
+glm.probs <- predict(glm.fit, test,
+type = "response")
+
+glm.pred <- rep(0, length(glm.probs))
+glm.pred[glm.probs > .5] <- 1
+
+table(glm.pred, test$HeartDisease)
+```
+This model gives a good estimation when we set the cutoff range at 0.5.
+```{r}
+glm.fit2 <- glm(HeartDisease ~ . - Age - RestingBP - RestingECG - MaxHR, data = train, family = binomial)
+summary(glm.fit2)
+
+glm.probs2 <- predict(glm.fit2, test,
+type = "response")
+
+glm.pred2 <- rep(0, length(glm.probs2))
+glm.pred2[glm.probs2 > .5] <- 1
+
+table(glm.pred2, test$HeartDisease)
+```
+By looking at the summary of the previous model we found out at that we could remove **age**, **restingBP**, **restingEXg** and **MaxHR**.
+
+## These can be tested: LDA, QDA, Naive bayes, KNN and Poisson. 
+
+### Trees
+```{r}
+tree.fit <- tree(HeartDisease ~ ., data = train)
+summary(tree.fit)
+
+tree.pred <- predict(tree.fit, test, type = "class")
+table(tree.pred, test$HeartDisease)
+```
+This performs almost as well as logistic regression.
+
 
 
 
