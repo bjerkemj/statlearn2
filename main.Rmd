@@ -192,6 +192,7 @@ ggplot(heart, aes(x = HeartDisease, y = Oldpeak, fill = HeartDisease)) +
        y = "Oldpeak") +
   theme_minimal()
 
+ggcorr(heart)
 #plot_grid(violin_age_dis, violin_restBP_dis, violin_chol_dis, violin_maxHR_dis, nrow=4, ncol=1)
 ```
 People with heart diseases are significantly older on average. This is not too surprising, as older people are more prone to heart diseases as the human body gets worn out over time. There's somewhat correlation between Age and MaxHR, which makes sence since MaxHR generally decreases as a person gets older. This partially explains that people with heartdiseases generally have a lower MaxHR, however it might also be that people with heart diseases generally are less exposed to anaerobic training, which usually helps MaxHR stay higher.
@@ -210,9 +211,11 @@ categorical_plot <- function(df, cat_var1, cat_var2) {
   
   plot <- ggplot(df_prop, aes(x = !!cat_var2_sym, y = Percentage, fill = !!cat_var1_sym)) +
     geom_bar(stat = "identity", position = "fill") +
-    labs(x = cat_var2,
-         y = "Percentage") +
+    labs(x = cat_var2) +
     theme_minimal() +
+    theme(legend.title = element_text(size = 4),
+          legend.text = element_text(size = 4),
+          aspect.ratio = 1) + # Set the aspect ratio
     scale_y_continuous(labels = percent_format())
   
   return(plot)
@@ -241,6 +244,12 @@ hd_exAng
 hd_ST <- categorical_plot(heart, "HeartDisease", "ST_Slope")
 hd_ST
 
+#library(patchwork)
+#combined_plot <- (hd_sex | hd_cpt) /
+                 (cpt_sex | hd_fastingBS) /
+                 (hd_ECG | hd_exAng)
+
+#print(combined_plot)
 # This just squishes the plots together:
 #plot_grid(hd_sex, hd_cpt, cpt_sex, hd_fastingBS, hd_ECG, hd_exAng, hd_ST, nrow=3, ncol=2)
 ```
@@ -251,6 +260,10 @@ To summarize, many of the categorical variables seem to be correlated to heart d
 
 
 ## Methods
+```{}
+# Have to split data into training and test sets
+```
+
 
 
 ## Results and interpretation
