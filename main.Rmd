@@ -1,7 +1,9 @@
 ---
-subtitle: "TMA4268 Statistical Learning V2023"
-title: "Compulsory Exercise 2: Title (give your project an informative title)"
-author: "Torbjørn Vatne, Ludvik Braathen and Johan Bjerkem"
+title: "Compulsory Exercise 2: Heart Diesease Inference"
+subtitle: TMA4268 Statistical Learning V2023
+author: | 
+  | Torbjørn Vatne, Ludvik Braathen and Johan Bjerkem
+  | Group 11
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: 
 - \usepackage{amsmath}
@@ -54,8 +56,33 @@ require(rlang)
 
 
 ## Introduction: Scope and purpose of your project
+Heart failure is one of the leading death causes in the world. Cardiovascular 
+diseases (CVDs) which in many cases leads to heart failure stands for 
+17.9 million deaths yearly. One third of people who suffer a heart attack or
+a stroke die prematurely (under the age of 70). (https://www.who.int/health-topics/cardiovascular-diseases#tab=tab_1)
+
+Detecting who is prone to heart failure is therefore an important task for 
+society. First and foremost it's important as lives can be saved by early
+detection and implementing counter measures. Secondly this is a huge cost to
+our society and a burden on our hospitals.
+
+The problem we solve is classification with regards to inference. We are 
+interested in the underlying relationsships between the predictor, and which 
+predictors that are more prevelant in patients with heart disease.
+
+
+We will try to present our findings in an easy and understandable manner. This
+is because we want this report to be accessible and simple for anyone to read. 
+As heart disease is prevalent in all parts of society, therefore informing the
+public of key indicators is important.
+
+We found our dataset on *kaggle* (https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction).
+It's a combination of 5 datasets which makes it on of the biggest freely 
+available datasets on heart failure.
 
 ## Descriptive data analysis/statistics
+In this part we have chosen to hide a lot of the code. This is because it's 
+mostly boiler plate for showing graphs and plots.
 ### Load data
 ```{r, echo = TRUE, results='hide'}
 heart <- read.csv("./heart.csv", header = T, stringsAsFactors = T)
