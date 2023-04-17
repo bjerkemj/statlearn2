@@ -44,6 +44,9 @@ library(knitr)
 library(kableExtra)
 library(dplyr)
 library(scales)
+
+require(tidyverse)
+require(rlang)
 ```
 
 <!--  Etc (load all packages needed). -->
@@ -215,7 +218,7 @@ categorical_plot <- function(df, cat_var1, cat_var2) {
     theme_minimal() +
     theme(legend.title = element_text(size = 4),
           legend.text = element_text(size = 4),
-          aspect.ratio = 1) + # Set the aspect ratio
+          aspect.ratio = 1) +
     scale_y_continuous(labels = percent_format())
   
   return(plot)
@@ -244,8 +247,8 @@ hd_exAng
 hd_ST <- categorical_plot(heart, "HeartDisease", "ST_Slope")
 hd_ST
 
-#library(patchwork)
-#combined_plot <- (hd_sex | hd_cpt) /
+library(patchwork)
+combined_plot <- (hd_sex | hd_cpt) /
                  (cpt_sex | hd_fastingBS) /
                  (hd_ECG | hd_exAng)
 
@@ -257,7 +260,10 @@ In the first plot, we see that men are more likely to have a heart disease than 
 
 To summarize, many of the categorical variables seem to be correlated to heart disease and might therefore be valuable predictors, however one has to be aware that many of the variables are correlated within.
 
-
+Error in cpt_sex | hd_fastingBS :
+  operations are possible only for numeric, logical or comples types
+Calls: <Anonymous> ... withVisible -> eval_with_user_handlers -> eval -> eval
+Execution halted
 
 ## Methods
 ```{}
