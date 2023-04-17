@@ -1,5 +1,5 @@
 ---
-title: "Compulsory Exercise 2: Heart Diesease Inference"
+title: 'Compulsory Exercise 2: Heart Diesease Inference'
 subtitle: TMA4268 Statistical Learning V2023
 author: | 
   | Torbjørn Vatne, Ludvik Braathen and Johan Bjerkem
@@ -18,15 +18,9 @@ output:
     toc: no
     toc_depth: '2'
 urlcolor: blue
-abstract: "**This is the place for your abstract (max 350 words).** Heart failure is one of the leading death causes in the world. Cardiovascular 
-diseases (CVDs) which in many cases leads to heart failure stands for 
-17.9 million deaths yearly. One third of people who suffer a heart attack or
-a stroke die prematurely (under the age of 70). (https://www.who.int/health-topics/cardiovascular-diseases#tab=tab_1)
+abstract: |
+  TODO
 
-Detecting who is prone to heart failure is therefore an important task for 
-society. First and foremost it's important as lives can be saved by early
-detection and implementing counter measures. Secondly this is a huge cost to
-our society and a burden on our hospitals."
 ---
   
 ```{r setup, include=FALSE}
@@ -48,12 +42,9 @@ library(dplyr)
 library(scales)
 require("tree")
 
-require(tidyverse)
-require(rlang)
+require("tidyverse")
+require("rlang")
 ```
-
-<!--  Etc (load all packages needed). -->
-
 
 ## Introduction: Scope and purpose of your project
 Heart failure is one of the leading death causes in the world. Cardiovascular 
@@ -83,6 +74,7 @@ available datasets on heart failure.
 ## Descriptive data analysis/statistics
 In this part we have chosen to hide a lot of the code. This is because it's 
 mostly boiler plate for showing graphs and plots.
+
 ### Load data
 ```{r, echo = TRUE, results='hide'}
 heart <- read.csv("./heart.csv", header = T, stringsAsFactors = T)
