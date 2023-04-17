@@ -61,8 +61,8 @@ require(rlang)
 heart <- read.csv("./heart.csv", header = T, stringsAsFactors = T)
 str(heart)
 summary(heart)
-heart$FastingBS <- as.factor(heart$FastingBS)
-heart$HeartDisease <- as.factor(heart$HeartDisease)
+heart$FastingBS <- factor(heart$FastingBS, levels = c(0, 1), labels = c("No", "Yes"))
+heart$HeartDisease <- factor(heart$HeartDisease, levels = c(0, 1), labels = c("No", "Yes"))
 kable(head(heart), format = "markdown", align = "c", row.names = FALSE)
 ```
 ```{r, echo=FALSE}
@@ -92,58 +92,35 @@ using the *str* and *summary* methods. Here we notice that the values
 have a look at the head of the data.
 
 
-### Histograms
+#### Histograms
 
-```{r, fig.width=5}
-tema = theme(plot.background = element_rect(fill="#e2e2e2"),
-             plot.title = element_text(size=10, hjust=.5),
-             axis.title.x = element_text(size=8, color = "black"),
-             axis.text.x = element_text(size=6),
-             axis.text.y = element_text(size=6))
-
-
+```{r histogram, fig.width=6, echo=FALSE}
 hist_age <- ggplot(data = heart, mapping = aes(x = Age)) +
-    geom_histogram(bins=25, fill = "red", color = "black", linewidth = 1.3) +
-    theme_excel() +
+    geom_histogram(binwidth = 2, fill = "red", color = "black") +
     xlab("Age") +
-    ylab("") +
-    ggtitle("Age Histogram") +
-    tema
+    ylab("Frequency") +
+    theme_minimal()
 
 hist_restbp <- ggplot(data = heart, mapping = aes(x = RestingBP)) +
-    geom_histogram(bins=20, fill = "blue", color = "black", linewidth = 1.3) +
-    theme_excel() +
+    geom_histogram(binwidth = 8, fill = "blue", color = "black") +
     xlab("RestingBP") +
-    ylab("") +
-    ggtitle("Resting Blood Pressure Histogram") +
-    tema
+    ylab("Frequency") +
+    theme_minimal()
 
 hist_chol <- ggplot(data = heart, mapping = aes(x = Cholesterol)) +
-    geom_histogram(bins=20, fill = "green", color = "black", linewidth = 1.3) +
-    theme_excel() +
+    geom_histogram(binwidth = 15, fill = "green", color = "black") +
     xlab("Cholesterol") +
-    ylab("") +
-    ggtitle("Cholesterol Histogram") +
-    tema
+    ylab("Frequency") +
+    theme_minimal()
 
-hist_maxhr <- ggplot(data = heart, mapping = aes(x = MaxHR)) +
-    geom_histogram(bins=20, fill = "pink", color = "black", linewidth = 1.3) +
-    theme_excel() +
-    xlab("Max HR") +
-    ylab("") +
-    ggtitle("Max Heart Rate Histogram") +
-    tema
-
-hist_maxhr_2 <- ggplot(data=heart, mapping=aes(MaxHR)) +
-  geom_histogram(binwidth = 10, fill="pink") +
+hist_maxhr <- ggplot(data=heart, mapping=aes(MaxHR)) +
+  geom_histogram(binwidth = 10, fill="pink", color = "black") +
   xlab("Max HR") +
   ylab("Frequency") +
-  ggtitle("Max Heart Rate") +
   theme_minimal()
 
-plot_grid(hist_age, hist_restbp, hist_chol, hist_maxhr_2, nrow=2, ncol=2)
+plot_grid(hist_age, hist_restbp, hist_chol, hist_maxhr, nrow=2, ncol=2)
 ```
-
 The **age** histogram seems legit and has no unexpected values. Both **resting 
 blood pressure** and **cholesterol** seem to have some fishy 0 values. To our
 knowledge and research these values are impossible, and seems to be a problem
@@ -151,34 +128,38 @@ with the data set. Continuing, the **max hr** plot also look okay, with no
 outliers.
 
 #### Correlations continous variables
-
-```{r}
-heart$HeartDisease <- factor(heart$HeartDisease, levels = c(0, 1), labels = c("No", "Yes"))
-
-ggplot(heart, aes(x = HeartDisease, y = Age, fill = HeartDisease)) +
+```{r violin, fig.width=6, echo=FALSE}
+hd_age <- ggplot(heart, aes(x = HeartDisease, y = Age, fill = HeartDisease)) +
   geom_violin() +
   labs(x = "Heart Disease",
        y = "Age") +
   theme_minimal()
 
-ggplot(heart, aes(x = HeartDisease, y = RestingBP, fill = HeartDisease)) +
+hd_op <- ggplot(heart, aes(x = HeartDisease, y = Oldpeak, fill = HeartDisease)) +
   geom_violin() +
   labs(x = "Heart Disease",
-       y = "Resting Blood Pressure") +
+       y = "Oldpeak") +
   theme_minimal()
 
-ggplot(heart, aes(x = HeartDisease, y = Cholesterol, fill = HeartDisease)) +
+hd_chol <- ggplot(heart, aes(x = HeartDisease, y = Cholesterol, fill = HeartDisease)) +
   geom_violin() +
   labs(x = "Heart Disease",
        y = "Cholesterol") +
   theme_minimal()
 
-ggplot(heart, aes(x = HeartDisease, y = MaxHR, fill = HeartDisease)) +
+hd_maxhr <- ggplot(heart, aes(x = HeartDisease, y = MaxHR, fill = HeartDisease)) +
   geom_violin() +
   labs(x = "Heart Disease",
        y = "MaxHR") +
   theme_minimal()
 
+plot_grid(hd_age, hd_op, hd_chol, hd_maxhr, nrow=2, ncol=2)
+```
+
+Bla bla bla, comment on the graphs above.
+
+#### Max Heart Rate and Age
+```{r age_maxhr, echo=FALSE}
 ggplot(heart, aes(x = Age, y = MaxHR)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "blue") +
@@ -186,20 +167,28 @@ ggplot(heart, aes(x = Age, y = MaxHR)) +
        y = "MaxHR") +
   theme_minimal()
 
-ggplot(heart, aes(x = HeartDisease, y = Oldpeak, fill = HeartDisease)) +
-  geom_violin() +
-  labs(x = "Heart Disease",
-       y = "Oldpeak") +
-  theme_minimal()
+correlation_test <- cor.test(heart$Age, heart$MaxHR, method = "pearson")
 
-ggcorr(heart)
-#plot_grid(violin_age_dis, violin_restBP_dis, violin_chol_dis, violin_maxHR_dis, nrow=4, ncol=1)
+# Print the correlation coefficient and p-value
+cat("Correlation coefficient:", correlation_test$estimate, "\nP-value:", correlation_test$p.value)
 ```
-People with heart diseases are significantly older on average. This is not too surprising, as older people are more prone to heart diseases as the human body gets worn out over time. There's somewhat correlation between Age and MaxHR, which makes sence since MaxHR generally decreases as a person gets older. This partially explains that people with heartdiseases generally have a lower MaxHR, however it might also be that people with heart diseases generally are less exposed to anaerobic training, which usually helps MaxHR stay higher.
+There's a correlation between **age** and **maxHR**, which makes sence since **MaxHR** 
+generally decreases as a person gets older. This partially explains that people 
+with heart diseases generally have a lower **maxHR**, however it might also be that
+people with heart diseases generally are less exposed to anaerobic training, 
+which usually helps **maxHR** stay higher.
 
-#### Categorical variables
 
 ```{r}
+ggcorr(heart)
+```
+People with heart diseases are significantly older on average. This is not too
+surprising, as older people are more prone to heart diseases as the human body
+gets worn out over time. 
+
+
+#### Categorical variables
+```{r cat_variables, fig.width=8, echo=FALSE}
 categorical_plot <- function(df, cat_var1, cat_var2) {
   cat_var1_sym <- rlang::sym(cat_var1)
   cat_var2_sym <- rlang::sym(cat_var2)
@@ -213,54 +202,28 @@ categorical_plot <- function(df, cat_var1, cat_var2) {
     geom_bar(stat = "identity", position = "fill") +
     labs(x = cat_var2) +
     theme_minimal() +
-    theme(legend.title = element_text(size = 4),
-          legend.text = element_text(size = 4),
-          aspect.ratio = 1) +
+    theme(legend.title = element_text(size = 8),
+          legend.text = element_text(size = 7),
+          axis.title = element_text(size = 8),
+          axis.text = element_text(size = 8)) +
     scale_y_continuous(labels = percent_format())
   
   return(plot)
 }
 
 hd_sex <- categorical_plot(heart, "HeartDisease", "Sex")
-hd_sex
-
 hd_cpt <- categorical_plot(heart, "HeartDisease", "ChestPainType")
-hd_cpt
-
-cpt_sex <- categorical_plot(heart, "ChestPainType", "Sex")
-cpt_sex
-
-heart$FastingBS <- factor(heart$FastingBS, levels = c(0, 1), labels = c("No", "Yes"))
-
 hd_fastingBS <- categorical_plot(heart, "HeartDisease", "FastingBS")
-hd_fastingBS
-
 hd_ECG <- categorical_plot(heart, "HeartDisease", "RestingECG")
-hd_ECG
-
 hd_exAng <- categorical_plot(heart, "HeartDisease", "ExerciseAngina")
-hd_exAng
-
 hd_ST <- categorical_plot(heart, "HeartDisease", "ST_Slope")
-hd_ST
+#cpt_sex <- categorical_plot(heart, "ChestPainType", "Sex")
 
-library(patchwork)
-combined_plot <- (hd_sex | hd_cpt) /
-                 (cpt_sex | hd_fastingBS) /
-                 (hd_ECG | hd_exAng)
-
-#print(combined_plot)
-# This just squishes the plots together:
-#plot_grid(hd_sex, hd_cpt, cpt_sex, hd_fastingBS, hd_ECG, hd_exAng, hd_ST, nrow=3, ncol=2)
+plot_grid(hd_sex, hd_cpt, hd_fastingBS, hd_ECG, hd_exAng, hd_ST, nrow=2, ncol=3)
 ```
 In the first plot, we see that men are more likely to have a heart disease than women. We also see from the second plot that type of chest pain has a significant correlation with heart diseases. It is important to realize that many of the variables are correlated. For example, there are more asymptomatic men than women, the ChestPainType-category that is most likely for a person with a heart disease. As we see, ChestPainType depends on Sex. It is more difficult to see how resting electrocardiogram results predicts heart disease as all three categories are rather close in percentage of heart disease cases.
 
 To summarize, many of the categorical variables seem to be correlated to heart disease and might therefore be valuable predictors, however one has to be aware that many of the variables are correlated within.
-
-Error in cpt_sex | hd_fastingBS :
-  operations are possible only for numeric, logical or comples types
-Calls: <Anonymous> ... withVisible -> eval_with_user_handlers -> eval -> eval
-Execution halted
 
 ## Methods
 ### Logistic Regression
@@ -275,7 +238,7 @@ test <- heart[test_index, ]
 
 ```{r glm}
 glm.fit <- glm(HeartDisease ~ ., data = train, family = binomial)
-summary(glm.fit)
+#summary(glm.fit)
 
 glm.probs <- predict(glm.fit, test,
 type = "response")
@@ -288,7 +251,7 @@ table(glm.pred, test$HeartDisease)
 This model gives a good estimation when we set the cutoff range at 0.5.
 ```{r}
 glm.fit2 <- glm(HeartDisease ~ . - Age - RestingBP - RestingECG - MaxHR, data = train, family = binomial)
-summary(glm.fit2)
+#summary(glm.fit2)
 
 glm.probs2 <- predict(glm.fit2, test,
 type = "response")
@@ -305,7 +268,7 @@ By looking at the summary of the previous model we found out at that we could re
 ### Trees
 ```{r}
 tree.fit <- tree(HeartDisease ~ ., data = train)
-summary(tree.fit)
+#summary(tree.fit)
 
 tree.pred <- predict(tree.fit, test, type = "class")
 table(tree.pred, test$HeartDisease)
