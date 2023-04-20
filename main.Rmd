@@ -46,7 +46,7 @@ require("tidyverse")
 require("rlang")
 
 library(MASS)  # For LDA and QDA
-library(kknn)  # For KNN
+library(class) # For kNN
 library(caret) # For K-fold CV
 library(boot)  # For K-fold CV
 ```
@@ -156,7 +156,7 @@ classification_counts = table(heart$HeartDisease)
 classification_percentages <- classification_counts / sum(classification_counts) * 100
 barplot(classification_percentages, xlab = "Heart disease", ylab = "Percentages")
 ```
-It's important to realize that this distribution is not reflected in real life, and therefore a model's performance on new data may be poor, as the model has learned the patterns specific to the training data. It's important to be aware of this, as it may lead to inference bias. However, as we see in the Cholesterol vs. Heart Disease, most of the zero-cholesterol observations are also heart disease observations, so removing these will somewhat adjust the unbalanced distribution. Have a look below:
+It's important to realize that this distribution does not reflect real life, and therefore a model's performance on new data may be poor, as the model has learned the patterns specific to the training data. It's important to be aware of this, as it may lead to inference bias. However, as we see in the **Cholesterol** vs. **Heart Disease**, most of the **zero-cholesterol** observations are also **heart disease** observations, so removing these will somewhat adjust the imbalanced distribution. Have a look below:
 
 ```{r updatedPercentages, echo=FALSE}
 
@@ -165,7 +165,6 @@ classification_counts = table(heart_filtered$HeartDisease)
 classification_percentages <- classification_counts / sum(classification_counts) * 100
 barplot(classification_percentages, xlab = "Heart disease", ylab = "Percentages")
 ```
-
 
 
 #### Correlations continous variables
@@ -264,17 +263,17 @@ To summarize, many of the categorical variables seem to be correlated to **heart
 
 ## Data preprocessing
 
-### Remove zero-cholesterol observations
+### Remove zero-cholesterol observations and split data into train and test.
 ```{r dataprocessing}
 set.seed(1)
-train_perc <- 0.70
+train_perc <- 0.60
 heart <- heart[heart$Cholesterol != 0, ]
 train_index <- sample(1:nrow(heart), nrow(heart)*train_perc)
 test_index <- (-train_index)
 train <- heart[train_index, ]
 test <- heart[test_index, ]
 ```
-From the data analysis, we concluded that are some false cholesterol observations. There are several approaches to deal with missing data. Since there were many observations missing cholesterol-data in this dataset, and the correct observations seemed close to normally distributed, we decided to drop the zero-cholesterol observations. 
+From the data analysis, we concluded that are some false cholesterol observations. There are several approaches to deal with missing data. We considered filling the values using kNN, but since removing the observations adjusted the imbalanced **heart disease** vs not. distribution, we decided to drop them.
 
 ## Methods
 ### Logistic Regression
@@ -293,68 +292,17 @@ accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
 ```
 This model gives a good estimation when we set the cutoff range at 0.5.
-```{r}
-glm.fit2 <- glm(HeartDisease ~ . - Age - RestingBP - RestingECG - MaxHR, data = train, family = binomial)
-# summary(glm.fit2)
 
-glm.probs2 <- predict(glm.fit2, test, type = "response")
-
-glm.pred2 <- rep(0, length(glm.probs2))
-glm.pred2[glm.probs2 > .5] <- 1
-
-confusion_matrix <- table(glm.pred2, test$HeartDisease)
-print(confusion_matrix)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-cat("Accuracy:", accuracy)
-```
-By looking at the summary of the previous model we found out at that we could remove **age**, **restingBP**, **restingEXg** and **MaxHR**.
-
-### K-fold CV on logistic regression
+### K-fold CV on Logistic regression
 ```{r logreg-CV}
-k <- 10
-glm.fit3 <- glm(HeartDisease ~ . - Age - RestingBP - RestingECG - MaxHR, data = heart, family = binomial)
-cv.glm(heart, glm.fit3)$delta
+#k <- 10
+glm.fit1 <- glm(HeartDisease ~ ., data = heart, family = binomial)
+delta <- cv.glm(heart, glm.fit1, K=10)$delta
+# Hva er tallene i delta? 1-Accuracy eller er det et annet tall?
 ```
 
 
-## These can be tested: QDA, Naive bayes, KNN and Poisson. 
-
-
-### Linear Discriminant Analysis
-```{r LDA}
-lda_model <- lda(HeartDisease ~ ., data = train)
-
-print(lda_model)
-lda_pred <- predict(lda_model, newdata = test)
-
-confusion_matrix <- table(Predicted = lda_pred$class, True = test$HeartDisease)
-print(confusion_matrix)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-cat("Accuracy:", accuracy)
-```
-The LDA is only fitted on continuous predictors as it does not directly handle 
-
-### 10-fold CV on LDA
-```{r LDA-CV}
-k <- 10
-
-
-```
-
-### Quadratic discriminant analysis on continous predictors
-```{r QDA}
-qda_model <- qda(HeartDisease ~ ., data = train)
-
-qda_pred <- predict(qda_model, newdata = test)
-
-confusion_matrix <- table(Predicted = qda_pred$class, True = test$HeartDisease)
-print(confusion_matrix)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-cat("Accuracy:", accuracy)
-```
-
-
-### KNN
+### k-Nearest Neighbors
 ```{r KNN}
 train_x <- train[, !(names(train) %in% "HeartDisease")]
 train_y <- train$HeartDisease
@@ -371,6 +319,8 @@ print(confusion_matrix)
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
 ```
+In kNN, the model calculates the distance from the new observation to each observation in the dataset, and then finds the k nearest and uses the most common class of the neighbors to classify the new observation. A limitation of kNN is it's computational complexity as it has to do n^2 computations for each new prediction, instead of creating an explicit model like logistic regression does.
+
 
 ### 
 
@@ -391,8 +341,12 @@ This performs almost as well as logistic regression.
 
 
 
-
 ## Results and interpretation
+Ved liten prosentandel false negative (ift hvor mange syke det er) er dette bra for modellen, men det er viktig å vite at siden vårt dataset er 50/50 distribuert, kan denne prosentandelen være lavere enn den ville vært på en modell trent på et datasett som reflekterer real world.
+
+- på den modellen vi velger å se videre på: 
+  - kjør best subset selection. 
+  - sjekk misclassification rate innenfor alle syke.
 
 
 ## Summary
