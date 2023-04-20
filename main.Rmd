@@ -45,10 +45,8 @@ require("tree")
 require("tidyverse")
 require("rlang")
 
-library(MASS)  # For LDA and QDA
-library(class) # For kNN
 library(caret) # For K-fold CV
-library(boot)  # For K-fold CV
+library(kknn) # For kNN
 ```
 
 ## Introduction: Scope and purpose of your project
@@ -293,38 +291,46 @@ cat("Accuracy:", accuracy)
 ```
 This model gives a good estimation when we set the cutoff range at 0.5.
 
-### K-fold CV on Logistic regression
+### 10-fold Cross Validation on Logistic regression
 ```{r logreg-CV}
 #k <- 10
-glm.fit1 <- glm(HeartDisease ~ ., data = heart, family = binomial)
-delta <- cv.glm(heart, glm.fit1, K=10)$delta
+#glm.fit1 <- glm(HeartDisease ~ ., data = heart, family = binomial)
+#delta <- cv.glm(heart, glm.fit1, K=10)$delta
 # Hva er tallene i delta? 1-Accuracy eller er det et annet tall?
+
+
+train_control <- trainControl(method = "cv", number = 10)
+
+logit_model <- train(HeartDisease ~ ., data = heart, method = "glm",
+                     family = "binomial",
+                     trControl = train_control,
+                     preProcess = c("center", "scale"))
+
+print(logit_model)
 ```
 
 
 ### k-Nearest Neighbors
 ```{r KNN}
-train_x <- train[, !(names(train) %in% "HeartDisease")]
-train_y <- train$HeartDisease
-test_x <- test[, !(names(test) %in% "HeartDisease")]
 test_y <- test$HeartDisease
 
-k_value <- 15
-knn_model <- kknn(HeartDisease ~ ., train = train, test = test, k = k_value, scale = TRUE)
+knn_pred <- function(k_value){
+  knn_model <- kknn(HeartDisease ~ ., train = train, test = test, k = k_value, scale = TRUE)
+  knn_pred <- knn_model$fitted.values
+  confusion_matrix <- table(Predicted = knn_pred, True = test_y)
+  return(confusion_matrix)
+}
 
-knn_pred <- knn_model$fitted.values
+k_values = 1:15
+accuracies = rep(0,15)
+for (k in k_values){
+  confusion_matrix <- knn_pred(k)
+  accuracies[k] <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+}
 
-confusion_matrix <- table(Predicted = knn_pred, True = test_y)
-print(confusion_matrix)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-cat("Accuracy:", accuracy)
+plot(k_values, accuracies, main = "kNN over different k's", xlab = "k", ylab = "Accuracy")
 ```
 In kNN, the model calculates the distance from the new observation to each observation in the dataset, and then finds the k nearest and uses the most common class of the neighbors to classify the new observation. A limitation of kNN is it's computational complexity as it has to do n^2 computations for each new prediction, instead of creating an explicit model like logistic regression does.
-
-
-### 
-
-
 
 ### Trees
 ```{r}
@@ -344,9 +350,13 @@ This performs almost as well as logistic regression.
 ## Results and interpretation
 Ved liten prosentandel false negative (ift hvor mange syke det er) er dette bra for modellen, men det er viktig å vite at siden vårt dataset er 50/50 distribuert, kan denne prosentandelen være lavere enn den ville vært på en modell trent på et datasett som reflekterer real world.
 
-- på den modellen vi velger å se videre på: 
-  - kjør best subset selection. 
-  - sjekk misclassification rate innenfor alle syke.
+```{r knn_results}
+confusion_matrix <- knn_pred(5)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Total accuracy:", accuracy)
+```
+From the plot of kNN's accuracy on different k's, we found that the best value for k is 5, as increasing it to 10 or higher would likely lead to overfitting, specially since we didn't use cross validation to find the accuracies. With k=5, we obtained a total accuracy of `r round(100*accuracy,2)`%, and the misclassification rate of sick people was 14.17%.It is important to be aware that this rate might be lower than it would be if the dataset would have a realistic distribution of sick vs. not sick obserservations. 
 
 
 ## Summary
