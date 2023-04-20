@@ -53,24 +53,25 @@ library(boot)  # For K-fold CV
 
 ## Introduction: Scope and purpose of your project
 Heart failure is one of the leading death causes in the world. Cardiovascular 
-diseases (CVDs) which in many cases leads to heart failure stands for 
+diseases which in many cases leads to heart failure, which stands for 
 17.9 million deaths yearly. One third of people who suffer a heart attack or
 a stroke die prematurely (under the age of 70). (https://www.who.int/health-topics/cardiovascular-diseases#tab=tab_1)
 
 Detecting who is prone to heart failure is therefore an important task for 
-society. First and foremost it's important as lives can be saved by early
+society. First and foremost it's important because many lives can be saved by early
 detection and implementing counter measures. Secondly this is a huge cost to
 our society and a burden on our hospitals.
 
 The problem we solve is classification with regards to inference. We are 
-interested in the underlying relationsships between the predictor, and which 
-predictors that are more prevelant in patients with heart disease.
-
+interested in the underlying relationships between the predictor, and which 
+predictors that are more prevalent in patients with heart disease.
 
 We will try to present our findings in an easy and understandable manner. This
 is because we want this report to be accessible and simple for anyone to read. 
 As heart disease is prevalent in all parts of society, therefore informing the
-public of key indicators is important.
+public of key indicators is important. As this is a small sample of the world 
+population, we hope to find key insights that gives us a clue about
+the health issues globally.
 
 We found our dataset on *kaggle* (https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction).
 It's a combination of 5 datasets which makes it on of the biggest freely 
@@ -78,7 +79,8 @@ available datasets on heart failure.
 
 ## Descriptive data analysis/statistics
 In this part we have chosen to hide a lot of the code. This is because it's 
-mostly boiler plate for showing graphs and plots.
+mostly boiler plate for showing graphs and plots. Feel free to inspect the code
+in the .Rmd file that should be attached.
 
 ### Load data
 ```{r, echo = TRUE, results='hide'}
@@ -109,8 +111,8 @@ first_5_rows <- truncate_colnames(first_5_rows, max_length = 7)
 kable(first_5_rows, format = "markdown", align = "c", row.names = FALSE)
 ```
 
-We import the data set from file and immediately turn all columns with values
-as strings into factors. After this we get a overview of the data 
+We import the data set from file and immediately turn all columns with string values
+into factors. After this we get a overview of the data 
 using the *str* and *summary* methods. Here we notice that the values 
 **fastingBS** and **heartDisease** need to be turned into factors. Lastly we
 have a look at the head of the data.
@@ -145,11 +147,7 @@ hist_maxhr <- ggplot(data=heart, mapping=aes(MaxHR)) +
 
 plot_grid(hist_age, hist_restbp, hist_chol, hist_maxhr, nrow=2, ncol=2)
 ```
-The **age** histogram seems legit and has no unexpected values. Both **resting 
-blood pressure** and **cholesterol** seem to have some fishy 0 values. To our
-knowledge and research these values are impossible, and seems to be a problem
-with the data set. Continuing, the **max hr** plot also look okay, with no 
-outliers.
+The **age** histogram seems legit, and look to be normally distributed with no unexpected values. Both **resting blood pressure** and **cholesterol** seem to have some fishy 0 values. To our knowledge and research these values are impossible, and seems to be a problem with the data set. Continuing, the **max hr** plot also look okay, with no outliers.
 
 #### Percentage of heart disease cases vs. not in dataset.
 
@@ -190,11 +188,7 @@ hd_maxhr <- ggplot(heart, aes(x = HeartDisease, y = MaxHR, fill = HeartDisease))
 plot_grid(hd_age, hd_op, hd_chol, hd_maxhr, nrow=2, ncol=2)
 ```
 
-People with heart diseases are significantly older on average. This is not too
-surprising, as older people are more prone to heart diseases as the human body
-gets worn out over time. 
-
-Bla bla bla, comment on the graphs above.
+People with **heart diseases** are significantly older on average. This is not too surprising, as older people are more prone to **heart diseases** as the human body gets worn out over time. There is also sufficient evidence that values far from 0 in **old peak** suggests **heart disease**. As mentioned earlier there is a lot of errors in the **cholesterol** column. We can tell that a majority of the errors are linked to individuals with **heart disease**. This is an interesting curiosity with this specific dataset. Lastly we can see that lower **maxHR** seems to indicate **heart disease**, which we will comment more on in the next section.
 
 #### Max Heart Rate and Age
 ```{r age_maxhr, echo=FALSE}
@@ -212,16 +206,13 @@ cat("Correlation coefficient:", correlation_test$estimate, "\nP-value:", correla
 ```
 There's a correlation between **age** and **maxHR**, which makes sence since **MaxHR** 
 generally decreases as a person gets older. This partially explains that people 
-with heart diseases generally have a lower **maxHR**, however it might also be that
-people with heart diseases generally are less exposed to anaerobic training, 
+with **heart diseases** generally have a lower **maxHR**, however it might also be that
+people with **heart diseases** generally are less exposed to anaerobic training, 
 which usually helps **maxHR** stay higher.
 
-
-```{r corr_matrix}
+```{r corr_matrix, echo=FALSE, eval=FALSE}
 ggcorr(heart)
 ```
-
-
 
 #### Categorical variables
 ```{r cat_variables, fig.width=8, echo=FALSE}
@@ -253,13 +244,13 @@ hd_fastingBS <- categorical_plot(heart, "HeartDisease", "FastingBS")
 hd_ECG <- categorical_plot(heart, "HeartDisease", "RestingECG")
 hd_exAng <- categorical_plot(heart, "HeartDisease", "ExerciseAngina")
 hd_ST <- categorical_plot(heart, "HeartDisease", "ST_Slope")
-#cpt_sex <- categorical_plot(heart, "ChestPainType", "Sex")
+cpt_sex <- categorical_plot(heart, "ChestPainType", "Sex")
 
-plot_grid(hd_sex, hd_cpt, hd_fastingBS, hd_ECG, hd_exAng, hd_ST, nrow=2, ncol=3)
+plot_grid(hd_sex, hd_cpt, cpt_sex, hd_fastingBS, hd_exAng, hd_ST, nrow=2, ncol=3)
 ```
-In the first plot, we see that men are more likely to have a heart disease than women. We also see from the second plot that type of chest pain has a significant correlation with heart diseases. It is important to realize that many of the variables are correlated. For example, there are more asymptomatic men than women, the ChestPainType-category that is most likely for a person with a heart disease. As we see, ChestPainType depends on Sex. It is more difficult to see how resting electrocardiogram results predicts heart disease as all three categories are rather close in percentage of heart disease cases.
+In the first plot, we see that men are more likely to have a **heart disease** than women. We also see from the second plot that type of chest pain has a significant correlation with **heart diseases**. It is important to realize that many of the variables are correlated. For example, there are more asymptomatic men than women, the ChestPainType-category that is most likely for a person with a **heart disease**. As we see, ChestPainType depends on Sex. It is more difficult to see how resting electrocardiogram results predicts **heart disease** as all three categories are rather close in percentage of **heart disease** cases.
 
-To summarize, many of the categorical variables seem to be correlated to heart disease and might therefore be valuable predictors, however one has to be aware that many of the variables are correlated within.
+To summarize, many of the categorical variables seem to be correlated to **heart disease** and might therefore be valuable predictors, however one has to be aware that many of the variables are correlated within.
 
 
 ## Data preprocessing
