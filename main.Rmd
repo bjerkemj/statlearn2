@@ -335,12 +335,6 @@ Logistic regression is used in classification problems where the output is of tw
 
 ### 10-fold Cross Validation on Logistic regression
 ```{r logreg-CV}
-#k <- 10
-#glm.fit1 <- glm(HeartDisease ~ ., data = heart, family = binomial)
-#delta <- cv.glm(heart, glm.fit1, K=10)$delta
-# Hva er tallene i delta? 1-Accuracy eller er det et annet tall?
-
-
 train_control <- trainControl(method = "cv", number = 10)
 
 logit_model <- train(HeartDisease ~ ., data = heart, method = "glm",
@@ -348,7 +342,14 @@ logit_model <- train(HeartDisease ~ ., data = heart, method = "glm",
                      trControl = train_control,
                      preProcess = c("center", "scale"))
 
+logit_model_red <- train(HeartDisease ~ Sex + ChestPainType + ExerciseAngina + ST_Slope + 
+    Age, data = heart, method = "glm",
+                     family = "binomial",
+                     trControl = train_control,
+                     preProcess = c("center", "scale"))
+
 print(logit_model)
+print(logit_model_red)
 ```
 
 
@@ -369,20 +370,14 @@ for (k in k_values){
   confusion_matrix <- knn_pred(k)
   accuracies[k] <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 }
-
-plot(k_values, accuracies, main = "kNN over different k's", xlab = "k", ylab = "Accuracy")
 ```
 In kNN, the model calculates the distance from the new observation to each observation in the dataset, and then finds the k nearest and uses the most common class of the neighbors to classify the new observation. A limitation of kNN is it's computational complexity as it has to do n^2 computations for each new prediction, instead of creating an explicit model like logistic regression does.
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/ludde2
 ### Trees
 ```{r}
 library(tree)
 tree.fit <- tree(HeartDisease ~ ., data = train)
-summary(tree.fit)
+#summary(tree.fit)
 
 tree.pred <- predict(tree.fit, test, type = "class")
 tree.confusion_matrix <- table(tree.pred, test$HeartDisease)
@@ -409,7 +404,7 @@ To improve our logistic regression method we decided to apply best subset regres
 glmulti.best.subset
 ```
 
-One interesting thing to note here is that **maxHR** has been left out, which is probably due to it's negative correlation with **age**. This model prediction of `r round(100*glm.best.accuracy, 2)`% which is slightly better than the first model. But looking at the confusion matrix below we see that one more person been classified as false negative. Due to lack of time we would probably run cross-validation on these to models to see if there is any difference between them, but the accuracy and confusion matrix seems to suggest basicly no difference. In that case the latter model is preferred because it is smaller. One advantege of this is that it is easier to explain and understand the influence of each predictor.
+One interesting thing to note here is that **maxHR** has been left out, which is probably due to it's negative correlation with **age**. This model prediction of `r round(100*glm.best.accuracy, 2)`% which is slightly better than the first model. But looking at the confusion matrix below we see that one more person been classified as false negative. In the methos section you can see we ran cross validation on the two model and the accuracy was basicly the same. In that case the latter model is preferred because it is smaller. One advantage of this is that it is easier to explain and understand the influence of each predictor.
 
 ```{r}
 glm.best.confusion_matrix
@@ -422,9 +417,9 @@ tree.confusion_matrix
 ```
 
 
-Ved liten prosentandel false negative (ift hvor mange syke det er) er dette bra for modellen, men det er viktig å vite at siden vårt dataset er 50/50 distribuert, kan denne prosentandelen være lavere enn den ville vært på en modell trent på et datasett som reflekterer real world.
-
 ```{r knn_results}
+
+plot(k_values, accuracies, main = "kNN over different k's", xlab = "k", ylab = "Accuracy")
 confusion_matrix <- knn_pred(5)
 print(confusion_matrix)
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
@@ -435,4 +430,4 @@ From the plot of kNN's accuracy on different k's, we found that the best value f
 
 ## Summary
 
-We have gained supporting evidence of our hypothesis that **heart disease** can be predicted with a high accuracy using simple body measurements. Some of the most important ones was **age**, **sex**, **chest pain type**, **exercise angina** and  **ST_Slope**. This also means we can predict who are prone to **heart diseases**. This can help extend the lives of millions of people and also save our hospitals from an unnecessary and expensive load of patients.
+We have gained supporting evidence of our hypothesis that **heart disease** can be predicted with a high accuracy using simple body measurements. Some of the most important ones were **age**, **sex**, **chest pain type**, **exercise angina** and  **ST_Slope**. This also means we can predict who are prone to **heart diseases**. This can help extend the lives of millions of people and also save our hospitals from an unnecessary and expensive load of patients.
