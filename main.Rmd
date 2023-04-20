@@ -53,13 +53,13 @@ library(boot)  # For K-fold CV
 
 ## Introduction: Scope and purpose of your project
 Heart failure is one of the leading death causes in the world. Cardiovascular 
-diseases (CVDs) which in many cases leads to heart failure stands for 
+diseases (CVDs) which in many cases leads to heart failure, which stands for 
 17.9 million deaths yearly. One third of people who suffer a heart attack or
 a stroke die prematurely (under the age of 70). (https://www.who.int/health-topics/cardiovascular-diseases#tab=tab_1)
 
 Detecting who is prone to heart failure is therefore an important task for 
-society. First and foremost it's important as lives can be saved by early
-detection and implementing counter measures. Secondly this is a huge cost to
+society. First and foremost, it's important as lives can be saved by early
+detection, and implementing counter measures. Secondly this is a huge cost to
 our society and a burden on our hospitals.
 
 The problem we solve is classification with regards to inference. We are 
@@ -74,7 +74,7 @@ public of key indicators is important.
 
 We found our dataset on *kaggle* (https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction).
 It's a combination of 5 datasets which makes it on of the biggest freely 
-available datasets on heart failure.
+available datasets on **heart disease**.
 
 ## Descriptive data analysis/statistics
 In this part we have chosen to hide a lot of the code. This is because it's 
@@ -157,8 +157,17 @@ outliers.
 classification_counts = table(heart$HeartDisease)
 classification_percentages <- classification_counts / sum(classification_counts) * 100
 barplot(classification_percentages, xlab = "Heart disease", ylab = "Percentages")
-
 ```
+It's important to realize that this distribution is not reflected in real life, and therefore a model's performance on new data may be poor, as the model has learned the patterns specific to the training data. It's important to be aware of this, as it may lead to inference bias. However, as we see in the Cholesterol vs. Heart Disease, most of the zero-cholesterol observations are also heart disease observations, so removing these will somewhat adjust the unbalanced distribution. Have a look below:
+
+```{r updatedPercentages, echo=FALSE}
+
+heart_filtered <- heart[heart$Cholesterol != 0, ]
+classification_counts = table(heart_filtered$HeartDisease)
+classification_percentages <- classification_counts / sum(classification_counts) * 100
+barplot(classification_percentages, xlab = "Heart disease", ylab = "Percentages")
+```
+
 
 
 #### Correlations continous variables
@@ -371,6 +380,9 @@ print(confusion_matrix)
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
 ```
+
+### 
+
 
 
 ### Trees
