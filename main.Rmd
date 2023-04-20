@@ -288,10 +288,8 @@ glm.probs <- predict(glm.fit, test, type = "response")
 glm.pred <- rep(0, length(glm.probs))
 glm.pred[glm.probs > .5] <- 1
 
-confusion_matrix <- table(glm.pred, test$HeartDisease)
-print(confusion_matrix)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-cat("Accuracy:", accuracy)
+glm.fit.confusion_matrix <- table(glm.pred, test$HeartDisease)
+glm.fit.accuracy <- sum(diag(glm.fit.confusion_matrix)) / sum(glm.fit.confusion_matrix)
 ```
 
 ```{r best_subset_logreg}
@@ -303,14 +301,14 @@ glmulti.logistic.out <-
             method = "h",            # Exhaustive approach
             crit = "aic",            # AIC as criteria
             confsetsize = 1,         # Keep 5 best models
-            plotty = F, report = T,  # No plot or interim reports
+            plotty = F, report = F,  # No plot or interim reports
             fitfunction = "glm",     # glm function
             family = binomial)       # binomial family for logistic regression
 ## Show 5 best models (Use @ instead of $ for an S4 object)
-glmulti.logistic.out@formulas
-summary(glmulti.logistic.out@objects[[1]])
-```
+glmulti.best.subset <- glmulti.logistic.out@formulas
+#summary(glmulti.logistic.out@objects[[1]])
 
+```
 
 ```{r best_model_logreg}
 glm.best <- glm(HeartDisease ~ Sex + ChestPainType + ExerciseAngina + ST_Slope + 
@@ -321,17 +319,13 @@ glm.probs <- predict(glm.best, test, type = "response")
 glm.pred <- rep(0, length(glm.probs))
 glm.pred[glm.probs > .5] <- 1
 
-confusion_matrix <- table(glm.pred, test$HeartDisease)
-print(confusion_matrix)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-cat("Accuracy:", accuracy)
+glm.best.confusion_matrix <- table(glm.pred, test$HeartDisease)
+glm.best.accuracy <- sum(diag(glm.best.confusion_matrix)) / sum(glm.best.confusion_matrix)
 
-car::Anova(glm.best)
+#car::Anova(glm.best)
 ```
 
-
-
-Logistic regression gives a good estimation when we set the cutoff range at 0.5. Our evaluation metric is accuracy, which we will use for the next models as well. This can be calculated using the forumla:
+Our evaluation metric is accuracy, which we will use for the next models as well. This can be calculated using the formula:
 
 $$
 \text{Accuracy} = \frac{\text{True Positives} + \text{True Negatives}}{\text{True Positives} + \text{True Negatives} + \text{False Positives} + \text{False Negatives}}
@@ -376,14 +370,43 @@ tree.fit <- tree(HeartDisease ~ ., data = train)
 summary(tree.fit)
 
 tree.pred <- predict(tree.fit, test, type = "class")
-confusion_matrix <- table(tree.pred, test$HeartDisease)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-cat("Accuracy:", accuracy)
+tree.confusion_matrix <- table(tree.pred, test$HeartDisease)
+tree.accuracy <- sum(diag(tree.confusion_matrix)) / sum(tree.confusion_matrix)
 ```
 
 A decision tree is a tree-based model used for both classification and regression tasks. It consists of internal nodes, branches, and leaf nodes. Each internal node represents a decision point based on a predictor value, and the branches stemming from these nodes represent different outcomes of that decision. As you traverse the tree from the top to bottom, you follow a path of choices that corresponds to a specific combination of predictor values. The leaf value at the bottom gives the probability. Due to the probabilities lying the leaf nodes the output is often step-like, which is characteristic of the model. It is not easy to decide on the depth of the tree for best output. A deep tree results in a drawback, but a short tree leads to over generalization. This means it is often difficult to manually find a suitable height for the given data. 
 
 ## Results and interpretation
+
+Firstly, we will consider the results of logstic regression. We started with a model containing all predictors. The model obtained an accuracy of `r round(100*glm.fit.accuracy, 2)`%. We think this is a good result, but we were keen to further investigate this model and try to make improvements upon it. Below is the confusion matrix presented:
+
+```{r}
+glm.fit.confusion_matrix
+```
+
+Doing statistics on diseases we are often more concerned for the amount of false negatives than the accuracy. This is because it's a better solution to classify more people ass sick and don't miss any individuals and rather have them take a second test. 
+
+In statistics, when studying diseases, it is often more crucial to minimize the number of false negatives than to simply focus on overall accuracy. This is because the cost of misclassifying a sick person as healthy (a false negative) can be much higher than misclassifying a healthy person as sick (a false positive). Therefore it is preferable to stay on the side of caution and classify more individuals as potentially sick, even if some of them are actually healthy. This aspect is of course more relevant to classification, but we thought it might be interesting to mention. In the top right corner of the confusion matrix we can tell that 13 has been classified as healthy, but in fact were sick.
+
+To improve our logistic regression method we decided to apply best subset regression. We thought it would be a better choice than forward or backward selection in this case, since we have such few predictors. This gave a model with these predictors:
+
+```{r}
+glmulti.best.subset
+```
+
+One interesting thing to note here is that **maxHR** has been left out, which is probably due to it's negative correlation with **age**. This model prediction of `r round(100*glm.best.accuracy, 2)`% which is slightly better than the first model. But looking at the confusion matrix below we see that one more person been classified as false negative. Due to lack of time we would probably run cross-validation on these to models to see if there is any difference between them, but the accuracy and confusion matrix seems to suggest basicly no difference. In that case the latter model is preferred because it is smaller. One advantege of this is that it is easier to explain and understand the influence of each predictor.
+
+```{r}
+glm.best.confusion_matrix
+```
+
+Lastly we will look at at the decision tree model. It performed with an accuracy of `r round(100*tree.accuracy,2)`%, which is very close to the other models. The confusion matrix is presented below. Here we can see that it has a bigger amount of false negatives.
+
+```{r}
+tree.confusion_matrix
+```
+
+
 Ved liten prosentandel false negative (ift hvor mange syke det er) er dette bra for modellen, men det er viktig å vite at siden vårt dataset er 50/50 distribuert, kan denne prosentandelen være lavere enn den ville vært på en modell trent på et datasett som reflekterer real world.
 
 - på den modellen vi velger å se videre på: 
