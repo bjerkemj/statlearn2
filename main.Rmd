@@ -19,7 +19,7 @@ output:
     toc_depth: '2'
 urlcolor: blue
 abstract: |
-  TODO
+  The main goal of this assignment is gaining a deeper insight into what causes heart disease. We are curious to whether some simple measurements on the body metrics can give probable cause to suspect sickness. Our dataset a merger of five smaller data sets from Europe and North America. We investigate the data using plots and try to gain key insights on the predictors and their relationships. We mainly use histograms and bar plots, but try to use more advanced tools where it's appropriate. We find out that there are some inconsistencies within the predictors. The biggest error we find are that there are many cases of individuals with zero cholesterol (which is impossible). Since a lot of the cases with zero cholesterol were cases with heart disease, we decided to remove before we started training models on the data. We trained and tested our data on three models; logistic regression, knn and decision trees. The models all perform well on the accuracy metric. This seems to suggest that our hypothesis was right; it is possible to predict heart disease on simple body measurements.
 
 ---
   
@@ -274,7 +274,8 @@ test_index <- (-train_index)
 train <- heart[train_index, ]
 test <- heart[test_index, ]
 ```
-From the data analysis, we concluded that are some false cholesterol observations. There are several approaches to deal with missing data. Since there were many observations missing cholesterol-data in this dataset, and the correct observations seemed close to normally distributed, we decided to drop the zero-cholesterol observations. 
+
+From the data analysis, we concluded that are some false **cholesterol** observations. There are several approaches to deal with missing data. Since there were many observations missing **cholesterol** data in this dataset, and the correct observations seemed close to normally distributed, we decided to drop the zero **cholesterol** observations. 
 
 ## Methods
 ### Logistic Regression
@@ -292,24 +293,54 @@ print(confusion_matrix)
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
 ```
-This model gives a good estimation when we set the cutoff range at 0.5.
-```{r}
-glm.fit2 <- glm(HeartDisease ~ . - Age - RestingBP - RestingECG - MaxHR, data = train, family = binomial)
-# summary(glm.fit2)
 
-glm.probs2 <- predict(glm.fit2, test, type = "response")
+```{r best_subset_logreg}
+require("glmulti")
 
-glm.pred2 <- rep(0, length(glm.probs2))
-glm.pred2[glm.probs2 > .5] <- 1
+glmulti.logistic.out <-
+    glmulti(HeartDisease ~ ., data = heart,
+            level = 1,               # No interaction considered
+            method = "h",            # Exhaustive approach
+            crit = "aic",            # AIC as criteria
+            confsetsize = 1,         # Keep 5 best models
+            plotty = F, report = T,  # No plot or interim reports
+            fitfunction = "glm",     # glm function
+            family = binomial)       # binomial family for logistic regression
+## Show 5 best models (Use @ instead of $ for an S4 object)
+glmulti.logistic.out@formulas
+summary(glmulti.logistic.out@objects[[1]])
+```
 
-confusion_matrix <- table(glm.pred2, test$HeartDisease)
+
+```{r best_model_logreg}
+glm.best <- glm(HeartDisease ~ Sex + ChestPainType + ExerciseAngina + ST_Slope + 
+    Age + Oldpeak + RestingBP, data = train, family = binomial)
+
+glm.probs <- predict(glm.best, test, type = "response")
+
+glm.pred <- rep(0, length(glm.probs))
+glm.pred[glm.probs > .5] <- 1
+
+confusion_matrix <- table(glm.pred, test$HeartDisease)
 print(confusion_matrix)
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
+
+car::Anova(glm.best)
 ```
-By looking at the summary of the previous model we found out at that we could remove **age**, **restingBP**, **restingEXg** and **MaxHR**.
+
+
+
+Logistic regression gives a good estimation when we set the cutoff range at 0.5. Our evaluation metric is accuracy, which we will use for the next models as well. This can be calculated using the forumla:
+
+$$
+\text{Accuracy} = \frac{\text{True Positives} + \text{True Negatives}}{\text{True Positives} + \text{True Negatives} + \text{False Positives} + \text{False Negatives}}
+$$
+
+Logistic regression is used in classification problems where the output is of two states, in our case **heart disease**. Logistic regression utilizes the logistic function (AKA sigmoid function). The logistic function transforms a linear model to a probability between 0 and 1 which is useful in classification. One of the disadvantages with logistic regression is the assumption that the logit transformed probabilities and the predictors. In our case this assumption seems to hold fairly good. 
 
 ### K-fold CV on logistic regression
+
 ```{r logreg-CV}
 k <- 10
 glm.fit3 <- glm(HeartDisease ~ . - Age - RestingBP - RestingECG - MaxHR, data = heart, family = binomial)
@@ -353,7 +384,6 @@ accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
 ```
 
-
 ### KNN
 ```{r KNN}
 train_x <- train[, !(names(train) %in% "HeartDisease")]
@@ -372,10 +402,6 @@ accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
 ```
 
-### 
-
-
-
 ### Trees
 ```{r}
 library(tree)
@@ -387,12 +413,12 @@ confusion_matrix <- table(tree.pred, test$HeartDisease)
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
 ```
-This performs almost as well as logistic regression.
 
-
-
+A decision tree is a tree-based model used for both classification and regression tasks. It consists of internal nodes, branches, and leaf nodes. Each internal node represents a decision point based on a predictor value, and the branches stemming from these nodes represent different outcomes of that decision. As you traverse the tree from the top to bottom, you follow a path of choices that corresponds to a specific combination of predictor values. The leaf value at the bottom gives the probability. Due to the probabilities lying the leaf nodes the output is often step-like, which is characteristic of the model. It is not easy to decide on the depth of the tree for best output. A deep tree results in a drawback, but a short tree leads to over generalization. This means it is often difficult to manually find a suitable height for the given data. 
 
 ## Results and interpretation
 
 
 ## Summary
+
+We have gained supporting evidence of our hypothesis that **heart disease** can be predicted with a high accuracy using simple body measurements. Some of the most important ones was **age**, **sex**, **chest pain type**, **exercise angina** and  **ST_Slope**. This also means we can predict who are prone to **heart diseases**. This can help extend the lives of millions of people and also save our hospitals from an unnecessary and expensive load of patients.
