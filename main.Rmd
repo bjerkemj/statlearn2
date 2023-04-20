@@ -44,6 +44,7 @@ require("tree")
 
 require("tidyverse")
 require("rlang")
+require("glmulti")
 
 library(caret) # For K-fold CV
 library(kknn) # For kNN
@@ -291,8 +292,6 @@ glm.fit.accuracy <- sum(diag(glm.fit.confusion_matrix)) / sum(glm.fit.confusion_
 ```
 
 ```{r best_subset_logreg}
-require("glmulti")
-
 glmulti.logistic.out <-
     glmulti(HeartDisease ~ ., data = heart,
             level = 1,               # No interaction considered
