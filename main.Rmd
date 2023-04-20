@@ -44,6 +44,11 @@ require("tree")
 
 require("tidyverse")
 require("rlang")
+
+library(MASS)  # For LDA and QDA
+library(kknn)  # For KNN
+library(caret) # For K-fold CV
+library(boot)  # For K-fold CV
 ```
 
 ## Introduction: Scope and purpose of your project
@@ -146,6 +151,16 @@ knowledge and research these values are impossible, and seems to be a problem
 with the data set. Continuing, the **max hr** plot also look okay, with no 
 outliers.
 
+#### Percentage of heart disease cases vs. not in dataset.
+
+```{r percentages}
+classification_counts = table(heart$HeartDisease)
+classification_percentages <- classification_counts / sum(classification_counts) * 100
+barplot(classification_percentages, xlab = "Heart disease", ylab = "Percentages")
+
+```
+
+
 #### Correlations continous variables
 ```{r violin, fig.width=6, echo=FALSE}
 hd_age <- ggplot(heart, aes(x = HeartDisease, y = Age, fill = HeartDisease)) +
@@ -175,6 +190,10 @@ hd_maxhr <- ggplot(heart, aes(x = HeartDisease, y = MaxHR, fill = HeartDisease))
 plot_grid(hd_age, hd_op, hd_chol, hd_maxhr, nrow=2, ncol=2)
 ```
 
+People with heart diseases are significantly older on average. This is not too
+surprising, as older people are more prone to heart diseases as the human body
+gets worn out over time. 
+
 Bla bla bla, comment on the graphs above.
 
 #### Max Heart Rate and Age
@@ -198,12 +217,10 @@ people with heart diseases generally are less exposed to anaerobic training,
 which usually helps **maxHR** stay higher.
 
 
-```{r}
+```{r corr_matrix}
 ggcorr(heart)
 ```
-People with heart diseases are significantly older on average. This is not too
-surprising, as older people are more prone to heart diseases as the human body
-gets worn out over time. 
+
 
 
 #### Categorical variables
@@ -244,53 +261,128 @@ In the first plot, we see that men are more likely to have a heart disease than 
 
 To summarize, many of the categorical variables seem to be correlated to heart disease and might therefore be valuable predictors, however one has to be aware that many of the variables are correlated within.
 
-## Methods
-### Logistic Regression
-```{r trainsplit}
+
+## Data preprocessing
+
+### Remove zero-cholesterol observations
+```{r dataprocessing}
 set.seed(1)
 train_perc <- 0.70
+heart <- heart[heart$Cholesterol != 0, ]
 train_index <- sample(1:nrow(heart), nrow(heart)*train_perc)
 test_index <- (-train_index)
 train <- heart[train_index, ]
 test <- heart[test_index, ]
 ```
+From the data analysis, we concluded that are some false cholesterol observations. There are several approaches to deal with missing data. Since there were many observations missing cholesterol-data in this dataset, and the correct observations seemed close to normally distributed, we decided to drop the zero-cholesterol observations. 
 
+## Methods
+### Logistic Regression
 ```{r glm}
 glm.fit <- glm(HeartDisease ~ ., data = train, family = binomial)
-#summary(glm.fit)
+# summary(glm.fit)
 
-glm.probs <- predict(glm.fit, test,
-type = "response")
+glm.probs <- predict(glm.fit, test, type = "response")
 
 glm.pred <- rep(0, length(glm.probs))
 glm.pred[glm.probs > .5] <- 1
 
-table(glm.pred, test$HeartDisease)
+confusion_matrix <- table(glm.pred, test$HeartDisease)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy:", accuracy)
 ```
 This model gives a good estimation when we set the cutoff range at 0.5.
 ```{r}
 glm.fit2 <- glm(HeartDisease ~ . - Age - RestingBP - RestingECG - MaxHR, data = train, family = binomial)
-#summary(glm.fit2)
+# summary(glm.fit2)
 
-glm.probs2 <- predict(glm.fit2, test,
-type = "response")
+glm.probs2 <- predict(glm.fit2, test, type = "response")
 
 glm.pred2 <- rep(0, length(glm.probs2))
 glm.pred2[glm.probs2 > .5] <- 1
 
-table(glm.pred2, test$HeartDisease)
+confusion_matrix <- table(glm.pred2, test$HeartDisease)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy:", accuracy)
 ```
 By looking at the summary of the previous model we found out at that we could remove **age**, **restingBP**, **restingEXg** and **MaxHR**.
 
-## These can be tested: LDA, QDA, Naive bayes, KNN and Poisson. 
+### K-fold CV on logistic regression
+```{r logreg-CV}
+k <- 10
+glm.fit3 <- glm(HeartDisease ~ . - Age - RestingBP - RestingECG - MaxHR, data = heart, family = binomial)
+cv.glm(heart, glm.fit3)$delta
+```
+
+
+## These can be tested: QDA, Naive bayes, KNN and Poisson. 
+
+
+### Linear Discriminant Analysis
+```{r LDA}
+lda_model <- lda(HeartDisease ~ ., data = train)
+
+print(lda_model)
+lda_pred <- predict(lda_model, newdata = test)
+
+confusion_matrix <- table(Predicted = lda_pred$class, True = test$HeartDisease)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy:", accuracy)
+```
+The LDA is only fitted on continuous predictors as it does not directly handle 
+
+### 10-fold CV on LDA
+```{r LDA-CV}
+k <- 10
+
+
+```
+
+### Quadratic discriminant analysis on continous predictors
+```{r QDA}
+qda_model <- qda(HeartDisease ~ ., data = train)
+
+qda_pred <- predict(qda_model, newdata = test)
+
+confusion_matrix <- table(Predicted = qda_pred$class, True = test$HeartDisease)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy:", accuracy)
+```
+
+
+### KNN
+```{r KNN}
+train_x <- train[, !(names(train) %in% "HeartDisease")]
+train_y <- train$HeartDisease
+test_x <- test[, !(names(test) %in% "HeartDisease")]
+test_y <- test$HeartDisease
+
+k_value <- 15
+knn_model <- kknn(HeartDisease ~ ., train = train, test = test, k = k_value, scale = TRUE)
+
+knn_pred <- knn_model$fitted.values
+
+confusion_matrix <- table(Predicted = knn_pred, True = test_y)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy:", accuracy)
+```
+
 
 ### Trees
 ```{r}
+library(tree)
 tree.fit <- tree(HeartDisease ~ ., data = train)
-#summary(tree.fit)
+summary(tree.fit)
 
 tree.pred <- predict(tree.fit, test, type = "class")
-table(tree.pred, test$HeartDisease)
+confusion_matrix <- table(tree.pred, test$HeartDisease)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy:", accuracy)
 ```
 This performs almost as well as logistic regression.
 
