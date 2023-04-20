@@ -75,7 +75,7 @@ the health issues globally.
 
 We found our dataset on *kaggle* (https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction).
 It's a combination of 5 datasets which makes it on of the biggest freely 
-available datasets on heart failure.
+available datasets on **heart disease**.
 
 ## Descriptive data analysis/statistics
 In this part we have chosen to hide a lot of the code. This is because it's 
@@ -155,8 +155,17 @@ The **age** histogram seems legit, and look to be normally distributed with no u
 classification_counts = table(heart$HeartDisease)
 classification_percentages <- classification_counts / sum(classification_counts) * 100
 barplot(classification_percentages, xlab = "Heart disease", ylab = "Percentages")
-
 ```
+It's important to realize that this distribution is not reflected in real life, and therefore a model's performance on new data may be poor, as the model has learned the patterns specific to the training data. It's important to be aware of this, as it may lead to inference bias. However, as we see in the Cholesterol vs. Heart Disease, most of the zero-cholesterol observations are also heart disease observations, so removing these will somewhat adjust the unbalanced distribution. Have a look below:
+
+```{r updatedPercentages, echo=FALSE}
+
+heart_filtered <- heart[heart$Cholesterol != 0, ]
+classification_counts = table(heart_filtered$HeartDisease)
+classification_percentages <- classification_counts / sum(classification_counts) * 100
+barplot(classification_percentages, xlab = "Heart disease", ylab = "Percentages")
+```
+
 
 
 #### Correlations continous variables
@@ -362,6 +371,9 @@ print(confusion_matrix)
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 cat("Accuracy:", accuracy)
 ```
+
+### 
+
 
 
 ### Trees
